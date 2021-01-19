@@ -111,6 +111,7 @@ def readMinSeeds(dir,treePath,minpt,maxpt,isB):
         y = np.hstack( (y,y_) )
 
         full = preprocess.filterClass(full)
+        full['hasL2'] = full.apply(preprocess.hasL2, axis=1)
 
         nfile = nfile+1
 

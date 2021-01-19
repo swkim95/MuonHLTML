@@ -11,10 +11,76 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import importlib
-
+import hyperopt
+import pickle
+import math
 import os
-# gpu_id = '0' #sys.argv[1]
-# os.environ["CUDA_VISIBLE_DEVICES"]=gpu_id
+
+def objective(params,dTrain):
+    param = {
+        'max_depth': int(params['max_depth']),
+        'eta': params['eta'],
+        'gamma': params['gamma'],
+        'lambda': params['lambda'],
+        'min_child_weight':params['min_child_weight'],
+        'objective':'multi:softprob',
+        'num_class': 4,
+        'subsample':0.5,
+        'eval_metric':'mlogloss',
+        'tree_method':'gpu_hist',
+        'nthread':4
+    }
+
+    xgb_cv = xgb.cv(dtrain=dTrain,nfold=5,num_boost_round=200,metrics='mlogloss',early_stopping_rounds=20,params=param)
+
+    return xgb_cv['test-mlogloss-mean'].min()
+
+def doTrain(version, seed, seedname, tag, doLoad, stdTransPar=None):
+    plotdir = 'plot_'+version
+    if not os.path.isdir(plotdir):
+        os.makedirs(plotdir)
+
+    colname = list(seed[0].columns)
+    print(colname)
+    print(seedname+"|"+tag + r' C0: %d, C1: %d, C2: %d, C3: %d' % \
+        ( (seed[1]==0).sum(), (seed[1]==1).sum(), (seed[1]==2).sum(), (seed[1]==3).sum() ) )
+
+    if doLoad :
+        print("doLoad means you are attempting to load a model instead of train. Did you mean doXGB?")
+        return
+
+    x_train, x_mean, x_std = preprocess.stdTransform(seed[0])
+    with open("scalefiles/%s_%s_%s_scale.txt" % (version, tag, seedname), "w") as f_scale:
+        f_scale.write( "%s_%s_%s_ScaleMean = %s\n" % (version, tag, seedname, str(x_mean.tolist())) )
+        f_scale.write( "%s_%s_%s_ScaleStd  = %s\n" % (version, tag, seedname, str(x_std.tolist())) )
+        f_scale.close()
+
+    y_wgtsTrain, wgts = preprocess.computeClassWgt(seed[1])
+    dtrain = xgb.DMatrix(seed[0], weight=y_wgtsTrain, label=seed[1], feature_names=colname)
+
+    weightSum = np.sum(y_wgtsTrain)
+
+    param_space = {
+        'max_depth': hyperopt.hp.quniform('max_depth',5,10,1),
+        'eta': hyperopt.hp.loguniform('eta',-3,1), # from exp(-3) to exp(1)
+        'gamma': hyperopt.hp.uniform('gamma',0,10),
+        'lambda': hyperopt.hp.uniform('lambda',0,3),
+        'min_child_weight': hyperopt.hp.loguniform('min_child_weight',math.log(weightSum/10000),math.log(weightSum/10))
+    }
+
+    trials = hyperopt.Trials()
+
+    objective_ = lambda x: objective(x, dtrain)
+
+    best = hyperopt.fmin(fn=objective_, space=param_space, max_evals=100, algo=hyperopt.tpe.suggest, trials=trials)
+
+    with open('model/'+version+'_'+tag+'_'+seedname+'_trial.pkl','wb') as output:
+        pickle.dump(trials, output, pickle.HIGHEST_PROTOCOL)
+
+    print('Best parameters for '+version+'_'+tag+'_'+seedname+' are')
+    print(best)
+
+    return
 
 def doXGB(version, seed, seedname, tag, doLoad, stdTransPar=None):
     plotdir = 'plot_'+version
@@ -59,7 +125,7 @@ def doXGB(version, seed, seedname, tag, doLoad, stdTransPar=None):
         'lambda':2.5
     }
     param['min_child_weight'] = np.sum(y_wgtsTrain)/50.
-    param['tree_method'] = 'exact'
+    param['tree_method'] = 'gpu_hist'
     param['nthread'] = 4
 
     num_round = 500
@@ -193,7 +259,7 @@ def run(version, seedname, tag):
     doLoad = False
     isB = ('Barrel' in tag)
 
-    ntuple_path = '/home/msoh/MuonHLTML_Run3/data/ntuple_81.root'
+    ntuple_path = '/data/shko/DYToLL_M-50_TuneCP5_14TeV-pythia8/crab_PU200-DYToLL_M50_Seed_ROIv01_20210106/210106_113339/0000/ntuple_*.root'
     # ntuple_path = '/home/common/DY_seedNtuple_v20200510/ntuple_*.root'
 
     stdTrans = None
@@ -205,24 +271,27 @@ def run(version, seedname, tag):
 
     print("\n\nStart: %s|%s" % (seedname, tag))
     seed = IO.readMinSeeds(ntuple_path, 'seedNtupler/'+seedname, 0.,99999.,isB)
-    doXGB(version, seed, seedname, tag, doLoad, stdTrans)
-
-
-VER = 'Run3v0'
-seedlist = ['NThltIterL3OI','NThltIter0','NThltIter2','NThltIter3','NThltIter0FromL1','NThltIter2FromL1','NThltIter3FromL1']
-seedlist = ['NThltIter2FromL1']
-taglist  = ['Barrel','Endcap']
-seed_run_list = [ (VER, seed, tag) for tag in taglist for seed in seedlist ]
+    # doXGB(version, seed, seedname, tag, doLoad, stdTrans)
+    doTrain(version, seed, seedname, tag, doLoad, stdTrans)
 
 if __name__ == '__main__':
     from warnings import simplefilter
     simplefilter(action='ignore', category=FutureWarning)
 
-    run_quick('NThltIter2FromL1')
+    VER = 'HLTTDR'
+    # seedlist = ['NThltIterL3OI','NThltIter0','NThltIter2','NThltIter3','NThltIter0FromL1','NThltIter2FromL1','NThltIter3FromL1']
+    seedlist = list(sys.argv[1].split(','))
+    taglist  = ['Barrel','Endcap']
+    seed_run_list = [ (VER, seed, tag) for tag in taglist for seed in seedlist ]
 
-    # pool = multiprocessing.Pool(processes=14)
-    # pool.starmap(run,seed_run_list)
-    # pool.close()
-    # pool.join()
+    gpu_id = sys.argv[2]
+    os.environ["CUDA_VISIBLE_DEVICES"]=gpu_id
+
+    # run_quick('NThltIter2FromL1')
+
+    pool = multiprocessing.Pool(processes=2)
+    pool.starmap(run,seed_run_list)
+    pool.close()
+    pool.join()
 
 print('Finished')

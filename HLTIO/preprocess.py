@@ -49,10 +49,17 @@ def dfSigBkg(df):
 
     return df, y
 
-def computeClassWgt(y, y_test):
+def computeClassWgt(y, y_test=None):
     wgts = utils.class_weight.compute_class_weight('balanced',np.unique(y),y)
 
     y_wgts = np.full(y.shape[0],1.)
+
+    if y_test is None:
+        for i,v in enumerate(wgts):
+            y_wgts = np.multiply(y_wgts,np.where(y==i,v,1.))
+
+        return y_wgts, wgts # FIXME not the best way
+
     ytest_wgts = np.full(y_test.shape[0],1.)
     for i,v in enumerate(wgts):
         y_wgts = np.multiply(y_wgts,np.where(y==i,v,1.))
@@ -88,6 +95,21 @@ def filterClass(df):
             'tsos_glob_z',
             'tsos_pt_val',
             'tsos_hasErr',
+            'tsos_err0', # use only diagonal terms
+            # 'tsos_err1',
+            'tsos_err2',
+            # 'tsos_err3',
+            # 'tsos_err4',
+            'tsos_err5',
+            # 'tsos_err6',
+            # 'tsos_err7',
+            # 'tsos_err8',
+            'tsos_err9',
+            # 'tsos_err10',
+            # 'tsos_err11',
+            # 'tsos_err12',
+            # 'tsos_err13',
+            'tsos_err14',
             'tsos_x',
             'tsos_y',
             'tsos_px',
@@ -97,25 +119,42 @@ def filterClass(df):
             'dPhi_minDRL1SeedP',
             'dR_minDPhiL1SeedX',
             'dPhi_minDPhiL1SeedX',
-            'dR_L1TkMuSeedP',
-            'dPhi_L1TkMuSeedP',
+            'dR_minDRL1SeedP_AtVtx',
+            'dPhi_minDRL1SeedP_AtVtx',
+            'dR_minDPhiL1SeedX_AtVtx',
+            'dPhi_minDPhiL1SeedX_AtVtx',
+            # 'dR_minDRL2SeedP',
+            # 'dPhi_minDRL2SeedP',
+            'dR_minDPhiL2SeedX',
+            'dPhi_minDPhiL2SeedX',
+            # 'dR_L1TkMuSeedP',
+            # 'dPhi_L1TkMuSeedP',
             'bestMatchTP_pdgId',
             'matchedTPsize',
             'gen_pt',
             'gen_eta',
             'gen_phi'
-            ], 
+            ],
         axis=1, inplace=True
     )
 
     return df
 
-def stdTransform(x_train, x_test):
+def hasL2(row):
+    if row['dR_minDRL2SeedP'] < 0.:
+        return 0
+    return 1
+
+def stdTransform(x_train, x_test=None):
     Transformer = preprocessing.StandardScaler()
     x_train     = Transformer.fit_transform(x_train)
-    x_test      = Transformer.transform(x_test)
     mean        = Transformer.mean_
     std         = Transformer.scale_
+
+    if x_test is None:
+        return x_train, mean, std # FIXME not the best way
+
+    x_test      = Transformer.transform(x_test)
 
     return x_train, x_test, mean, std
 

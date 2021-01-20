@@ -13,8 +13,8 @@ def vconcat(sig,bkg):
 
     return x, y
 
-def split(x, y):
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.5)
+def split(x, y, test_size=0.5):
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=test_size)
 
     return x_train, x_test, y_train, y_test
 

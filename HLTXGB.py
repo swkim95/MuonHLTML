@@ -16,6 +16,23 @@ import pickle
 import math
 import os
 
+def getBestParam(seedname,tag):
+    # note that optimized parameters always depend on the training set i.e. needs to be re-optimized when using different set
+    if seedname == 'NThltIterL3OI':
+        if tag == 'Barrel':
+            return {'eta': 0.06575256610822619, 'gamma': 3.092874778027949, 'lambda': 1.149946617809189, 'max_depth': 10, 'min_child_weight': 1302.7598075776639}
+        if tag == 'Endcap':
+            return {'eta': 0.0649164398943043, 'gamma': 3.792188468267796, 'lambda': 0.9036363051887085, 'max_depth': 9, 'min_child_weight': 69.87920184424019}
+    if seedname == 'NThltIter2FromL1':
+        if tag == 'Barrel':
+            return {'eta': 0.15111703753444314, 'gamma': 0.9373888458344002, 'lambda': 2.2412851256155575, 'max_depth': 10, 'min_child_weight': 130.2675912144156}
+        if tag == 'Endcap':
+            return {'eta': 0.29706277557430294, 'gamma': 1.3065125441870513, 'lambda': 0.2684202205297761, 'max_depth': 10, 'min_child_weight': 153.79963106148827}
+
+    raise NameError('Please check seedname or tag!')
+
+    return
+
 def objective(params,dTrain):
     param = {
         'max_depth': int(params['max_depth']),
@@ -92,8 +109,7 @@ def doXGB(version, seed, seedname, tag, doLoad, stdTransPar=None):
     print(seedname+"|"+tag + r' C0: %d, C1: %d, C2: %d, C3: %d' % \
         ( (seed[1]==0).sum(), (seed[1]==1).sum(), (seed[1]==2).sum(), (seed[1]==3).sum() ) )
 
-
-    x_train, x_test, y_train, y_test = preprocess.split(seed[0], seed[1])
+    x_train, x_test, y_train, y_test = preprocess.split(seed[0], seed[1],0.2)
 
     if doLoad and stdTransPar==None:
         print("doLoad is True but stdTransPar==None --> return")
@@ -114,28 +130,24 @@ def doXGB(version, seed, seedname, tag, doLoad, stdTransPar=None):
     dtest  = xgb.DMatrix(x_test,  weight=y_wgtsTest,  label=y_test,  feature_names=colname)
 
     evallist = [(dtest, 'eval'), (dtrain, 'train')]
-    param = {
-        'max_depth':6,
-        'eta':0.1,
-        'gamma':10,
-        'objective':'multi:softprob',
-        'num_class': 4,
-        'subsample':0.5,
-        'eval_metric':'mlogloss',
-        'lambda':2.5
-    }
-    param['min_child_weight'] = np.sum(y_wgtsTrain)/50.
+
+    param = getBestParam(seedname,tag)
+
+    param['objective'] = 'multi:softprob'
+    param['num_class'] = 4
+    param['subsample'] = 0.5
+    param['eval_metric'] = 'mlogloss'
     param['tree_method'] = 'gpu_hist'
     param['nthread'] = 4
 
-    num_round = 500
+    num_round = 200
 
     bst = xgb.Booster(param)
 
     if doLoad:
         bst.load_model('model/'+version+'_'+tag+'_'+seedname+'.model')
     else:
-        bst = xgb.train(param, dtrain, num_round, evallist, early_stopping_rounds=50, verbose_eval=100)
+        bst = xgb.train(param, dtrain, num_round, evallist, early_stopping_rounds=20, verbose_eval=50)
         bst.save_model('model/'+version+'_'+tag+'_'+seedname+'.model')
 
     dTrainPredict    = bst.predict(dtrain)
@@ -271,8 +283,8 @@ def run(version, seedname, tag):
 
     print("\n\nStart: %s|%s" % (seedname, tag))
     seed = IO.readMinSeeds(ntuple_path, 'seedNtupler/'+seedname, 0.,99999.,isB)
-    # doXGB(version, seed, seedname, tag, doLoad, stdTrans)
-    doTrain(version, seed, seedname, tag, doLoad, stdTrans)
+    doXGB(version, seed, seedname, tag, doLoad, stdTrans)
+    # doTrain(version, seed, seedname, tag, doLoad, stdTrans)
 
 if __name__ == '__main__':
     from warnings import simplefilter

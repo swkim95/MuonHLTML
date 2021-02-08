@@ -25,9 +25,10 @@ def getBestParam(seedname,tag):
             return {'eta': 0.0649164398943043, 'gamma': 3.792188468267796, 'lambda': 0.9036363051887085, 'max_depth': 9, 'min_child_weight': 69.87920184424019}
     if seedname == 'NThltIter2FromL1':
         if tag == 'Barrel':
-            return {'eta': 0.15111703753444314, 'gamma': 0.9373888458344002, 'lambda': 2.2412851256155575, 'max_depth': 10, 'min_child_weight': 130.2675912144156}
-        if tag == 'Endcap':
-            return {'eta': 0.29706277557430294, 'gamma': 1.3065125441870513, 'lambda': 0.2684202205297761, 'max_depth': 10, 'min_child_weight': 153.79963106148827}
+            return {'eta': 0.11370670513701887, 'gamma': 0.8175150663273574, 'lambda': 0.5410160034001444, 'max_depth': 10, 'min_child_weight': 97.10666707815184}
+        if tag == 'Endcap': # modified by hand
+            return {'eta': 0.33525154433566323, 'gamma': 0.7307823685738455, 'lambda': 0.31169463543440357, 'max_depth': 10, 'min_child_weight': 148.29348974514608}
+            # return {'eta': 0.05, 'gamma': 5.0, 'lambda': 2.0, 'max_depth': 8, 'min_child_weight': 1000.0}
 
     raise NameError('Please check seedname or tag!')
 
@@ -89,7 +90,7 @@ def doTrain(version, seed, seedname, tag, doLoad, stdTransPar=None):
 
     objective_ = lambda x: objective(x, dtrain)
 
-    best = hyperopt.fmin(fn=objective_, space=param_space, max_evals=100, algo=hyperopt.tpe.suggest, trials=trials)
+    best = hyperopt.fmin(fn=objective_, space=param_space, max_evals=256, algo=hyperopt.tpe.suggest, trials=trials)
 
     with open('model/'+version+'_'+tag+'_'+seedname+'_trial.pkl','wb') as output:
         pickle.dump(trials, output, pickle.HIGHEST_PROTOCOL)
@@ -290,7 +291,7 @@ if __name__ == '__main__':
     from warnings import simplefilter
     simplefilter(action='ignore', category=FutureWarning)
 
-    VER = 'HLTTDR'
+    VER = 'HLTTDR_v3'
     # seedlist = ['NThltIterL3OI','NThltIter0','NThltIter2','NThltIter3','NThltIter0FromL1','NThltIter2FromL1','NThltIter3FromL1']
     seedlist = list(sys.argv[1].split(','))
     taglist  = ['Barrel','Endcap']

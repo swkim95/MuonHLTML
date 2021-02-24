@@ -10,7 +10,7 @@ import xgboost as xgb
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import importlib
+import json
 import hyperopt
 import pickle
 import math
@@ -119,8 +119,8 @@ def doXGB(version, seed, seedname, tag, doLoad, stdTransPar=None):
     if stdTransPar==None:
         x_train, x_test, x_mean, x_std = preprocess.stdTransform(x_train, x_test)
         with open("scalefiles/%s_%s_%s_scale.txt" % (version, tag, seedname), "w") as f_scale:
-            f_scale.write( "%s_%s_%s_ScaleMean = %s\n" % (version, tag, seedname, str(x_mean.tolist())) )
-            f_scale.write( "%s_%s_%s_ScaleStd  = %s\n" % (version, tag, seedname, str(x_std.tolist())) )
+            f_scale.write( str(x_mean.tolist()) )
+            f_scale.write( str(x_std.tolist()) )
             f_scale.close()
     else:
         x_train, x_test = preprocess.stdTransformFixed(x_train, x_test, stdTransPar)
@@ -201,35 +201,35 @@ def doXGB(version, seed, seedname, tag, doLoad, stdTransPar=None):
     TrainScoreCat3 = dTrainPredict[:,3]
     TestScoreCat3  = dTestPredict[:,3]
 
-    TrainScoreCat3Sig = np.array( [ score for i, score in enumerate(TrainScoreCat3) if y_train[i]==3 ] )
-    TrainScoreCat3Bkg = np.array( [ score for i, score in enumerate(TrainScoreCat3) if y_train[i]!=3 ] )
-    vis.drawScore(TrainScoreCat3Sig, TrainScoreCat3Bkg, version+'_'+tag+'_'+seedname+r'_trainScore_cat3', plotdir)
+    TrainScoreCat3Sig_Xgb = np.array( [ score for i, score in enumerate(TrainScoreCat3) if y_train[i]==3 ] )
+    TrainScoreCat3Bkg_Xgb = np.array( [ score for i, score in enumerate(TrainScoreCat3) if y_train[i]!=3 ] )
+    vis.drawScore(TrainScoreCat3Sig_Xgb, TrainScoreCat3Bkg_Xgb, version+'_'+tag+'_'+seedname+r'_trainScore_cat3', plotdir)
 
-    TestScoreCat3Sig = np.array( [ score for i, score in enumerate(TestScoreCat3) if y_test[i]==3 ] )
-    TestScoreCat3Bkg = np.array( [ score for i, score in enumerate(TestScoreCat3) if y_test[i]!=3 ] )
-    vis.drawScore(TestScoreCat3Sig, TestScoreCat3Bkg, version+'_'+tag+'_'+seedname+r'_testScore_cat3', plotdir)
+    TestScoreCat3Sig_Xgb = np.array( [ score for i, score in enumerate(TestScoreCat3) if y_test[i]==3 ] )
+    TestScoreCat3Bkg_Xgb = np.array( [ score for i, score in enumerate(TestScoreCat3) if y_test[i]!=3 ] )
+    vis.drawScore(TestScoreCat3Sig_Xgb, TestScoreCat3Bkg_Xgb, version+'_'+tag+'_'+seedname+r'_testScore_cat3', plotdir)
 
     TrainScoreCat3 = postprocess.sigmoid( dTrainPredictRaw[:,3] )
     TestScoreCat3  = postprocess.sigmoid( dTestPredictRaw[:,3] )
 
-    TrainScoreCat3Sig = np.array( [ score for i, score in enumerate(TrainScoreCat3) if y_train[i]==3 ] )
-    TrainScoreCat3Bkg = np.array( [ score for i, score in enumerate(TrainScoreCat3) if y_train[i]!=3 ] )
-    vis.drawScore(TrainScoreCat3Sig, TrainScoreCat3Bkg, version+'_'+tag+'_'+seedname+r'_trainScoreSigm_cat3', plotdir)
+    TrainScoreCat3Sig_Sigm = np.array( [ score for i, score in enumerate(TrainScoreCat3) if y_train[i]==3 ] )
+    TrainScoreCat3Bkg_Sigm = np.array( [ score for i, score in enumerate(TrainScoreCat3) if y_train[i]!=3 ] )
+    vis.drawScore(TrainScoreCat3Sig_Sigm, TrainScoreCat3Bkg_Sigm, version+'_'+tag+'_'+seedname+r'_trainScoreSigm_cat3', plotdir)
 
-    TestScoreCat3Sig = np.array( [ score for i, score in enumerate(TestScoreCat3) if y_test[i]==3 ] )
-    TestScoreCat3Bkg = np.array( [ score for i, score in enumerate(TestScoreCat3) if y_test[i]!=3 ] )
-    vis.drawScore(TestScoreCat3Sig, TestScoreCat3Bkg, version+'_'+tag+'_'+seedname+r'_testScoreSigm_cat3', plotdir)
+    TestScoreCat3Sig_Sigm = np.array( [ score for i, score in enumerate(TestScoreCat3) if y_test[i]==3 ] )
+    TestScoreCat3Bkg_Sigm = np.array( [ score for i, score in enumerate(TestScoreCat3) if y_test[i]!=3 ] )
+    vis.drawScore(TestScoreCat3Sig_Sigm, TestScoreCat3Bkg_Sigm, version+'_'+tag+'_'+seedname+r'_testScoreSigm_cat3', plotdir)
 
     TrainScoreCat3 = dTrainPredictRaw[:,3]
     TestScoreCat3  = dTestPredictRaw[:,3]
 
-    TrainScoreCat3Sig = np.array( [ score for i, score in enumerate(TrainScoreCat3) if y_train[i]==3 ] )
-    TrainScoreCat3Bkg = np.array( [ score for i, score in enumerate(TrainScoreCat3) if y_train[i]!=3 ] )
-    vis.drawScoreRaw(TrainScoreCat3Sig, TrainScoreCat3Bkg, version+'_'+tag+'_'+seedname+r'_trainScoreRaw_cat3', plotdir)
+    TrainScoreCat3Sig_Raw = np.array( [ score for i, score in enumerate(TrainScoreCat3) if y_train[i]==3 ] )
+    TrainScoreCat3Bkg_Raw = np.array( [ score for i, score in enumerate(TrainScoreCat3) if y_train[i]!=3 ] )
+    vis.drawScoreRaw(TrainScoreCat3Sig_Raw, TrainScoreCat3Bkg_Raw, version+'_'+tag+'_'+seedname+r'_trainScoreRaw_cat3', plotdir)
 
-    TestScoreCat3Sig = np.array( [ score for i, score in enumerate(TestScoreCat3) if y_test[i]==3 ] )
-    TestScoreCat3Bkg = np.array( [ score for i, score in enumerate(TestScoreCat3) if y_test[i]!=3 ] )
-    vis.drawScoreRaw(TestScoreCat3Sig, TestScoreCat3Bkg, version+'_'+tag+'_'+seedname+r'_testScoreRaw_cat3', plotdir)
+    TestScoreCat3Sig_Raw = np.array( [ score for i, score in enumerate(TestScoreCat3) if y_test[i]==3 ] )
+    TestScoreCat3Bkg_Raw = np.array( [ score for i, score in enumerate(TestScoreCat3) if y_test[i]!=3 ] )
+    vis.drawScoreRaw(TestScoreCat3Sig_Raw, TestScoreCat3Bkg_Raw, version+'_'+tag+'_'+seedname+r'_testScoreRaw_cat3', plotdir)
     # -- #
 
     # -- Importance -- #
@@ -238,6 +238,9 @@ def doXGB(version, seed, seedname, tag, doLoad, stdTransPar=None):
         cover = bst.get_score(importance_type='cover')
         vis.drawImportance(gain,cover,colname,version+'_'+tag+'_'+seedname+'_importance', plotdir)
     # -- #
+
+    with open('model/'+version+'_'+tag+'_'+seedname+'_plotObj.pkl','wb') as output:
+        pickle.dump([confMat, confMatAbs, TrainScoreCat3Sig_Xgb, TrainScoreCat3Bkg_Xgb, TestScoreCat3Sig_Xgb, TestScoreCat3Bkg_Xgb, TrainScoreCat3Sig_Raw, TrainScoreCat3Bkg_Raw, TestScoreCat3Sig_Raw, TestScoreCat3Bkg_Raw], output, pickle.HIGHEST_PROTOCOL)
 
     return
 
@@ -269,7 +272,7 @@ def run_quick(seedname):
     doXGB('vTEST',seed,seedname,tag,doLoad)
 
 def run(version, seedname, tag):
-    doLoad = False
+    doLoad = True # False
     isB = ('Barrel' in tag)
 
     ntuple_path = '/data/shko/DYToLL_M-50_TuneCP5_14TeV-pythia8/crab_PU200-DYToLL_M50_Seed_ROIv01_20210106/210106_113339/0000/ntuple_*.root'
@@ -277,9 +280,9 @@ def run(version, seedname, tag):
 
     stdTrans = None
     if doLoad:
-        scalefile = importlib.import_module("scalefiles."+tag+"_"+seedname+"_scale")
-        scaleMean = getattr(scalefile, version+"_"+tag+"_"+seedname+"_ScaleMean")
-        scaleStd  = getattr(scalefile, version+"_"+tag+"_"+seedname+"_ScaleStd")
+        scalefile = open("scalefiles/"+version+"_"+tag+"_"+seedname+"_scale.txt",'r')
+        scaleMean = json.loads(scalefile.readline())
+        scaleStd  = json.loads(scalefile.readline())
         stdTrans = [ scaleMean, scaleStd ]
 
     print("\n\nStart: %s|%s" % (seedname, tag))
@@ -291,7 +294,7 @@ if __name__ == '__main__':
     from warnings import simplefilter
     simplefilter(action='ignore', category=FutureWarning)
 
-    VER = 'HLTTDR_v3'
+    VER = 'HLTTDR_vTDR'
     # seedlist = ['NThltIterL3OI','NThltIter0','NThltIter2','NThltIter3','NThltIter0FromL1','NThltIter2FromL1','NThltIter3FromL1']
     seedlist = list(sys.argv[1].split(','))
     taglist  = ['Barrel','Endcap']

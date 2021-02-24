@@ -157,6 +157,27 @@ def drawScore(dSigPredict, dBkgPredict, plotname, dirname="plot"):
 
     return
 
+def drawScoreOverlay(dSigPredictTrain, dBkgPredictTrain, dSigPredictTest, dBkgPredictTest, plotname, dirname="plot"):
+    plt.figure(figsize=(6,4))
+    plt.rc('font', size=12)
+    plt.hist(dSigPredictTrain, 100, density=True, histtype=u'step', label='Train:Sig', range=(0,1), color='navy')
+    plt.hist(dBkgPredictTrain, 100, density=True, histtype=u'step', label='Train:Bkg', range=(0,1), color='maroon')
+    plt.hist(dSigPredictTest, 100, density=True, alpha=0.4, label='Test:Sig', range=(0,1), color='blue')
+    plt.hist(dBkgPredictTest, 100, density=True, alpha=0.4, label='Test:Bkg', range=(0,1), color='red')
+    plt.grid()
+    plt.yscale('log')
+    plt.xlim([0,1])
+    # plt.ylim([0,100])
+    # plt.title(plotname, fontsize=8)
+    plt.xlabel('Score')
+    plt.ylabel('a.u.')
+    plt.legend(loc=(0.65,0.65))
+
+    plt.savefig('./'+dirname+'/'+plotname+'.pdf',dpi=300, bbox_inches='tight')
+    plt.close()
+
+    return
+
 def drawScoreRaw(dSigPredict, dBkgPredict, plotname, dirname="plot"):
     plt.figure(figsize=(6,4))
     plt.hist(dSigPredict, 100, density=True, alpha=0.5, label='Sig', color='b')
@@ -177,8 +198,11 @@ def drawScoreRaw(dSigPredict, dBkgPredict, plotname, dirname="plot"):
 
 def drawConfMat(confMat, plotname, dirname="plot", doNorm = True):
     # plt.figure(figsize=(6,4))
+    plt.rc('font', size=12)
+    plt.rc('xtick', labelsize=9)
+    plt.rc('ytick', labelsize=11)
     fig, ax = plt.subplots()
-    names = ['NotBuilt','Comb','Tracks','Muons']
+    names = ['Failed-to-build','Combinatorial','Sim-matched','Muon-matched']
 
     if doNorm:
         mat = ax.imshow(confMat,cmap='viridis', vmin=0., vmax=1.)
@@ -197,7 +221,11 @@ def drawConfMat(confMat, plotname, dirname="plot", doNorm = True):
     for i in range(len(names)):
         for j in range(len(names)):
             if doNorm:
-                text = ax.text(j, i, r'{:.3f}'.format(confMat[i,j]), ha='center', va='center', color='w')
+                if confMat[i,j] > 0.8:
+                    text = ax.text(j, i, r'{:.3f}'.format(confMat[i,j]), ha='center', va='center', color='navy')
+                else:
+                    text = ax.text(j, i, r'{:.3f}'.format(confMat[i,j]), ha='center', va='center', color='w')
+
             else:
                 text = ax.text(j, i, r'{:.0f}'.format(confMat[i,j]), ha='center', va='center', color='w')
 

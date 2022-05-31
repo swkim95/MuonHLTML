@@ -50,7 +50,7 @@ def dfSigBkg(df):
     return df, y
 
 def computeClassWgt(y, y_test=None):
-    wgts = utils.class_weight.compute_class_weight('balanced',np.unique(y),y)
+    wgts = utils.class_weight.compute_class_weight('balanced',classes=np.unique(y),y=y)
 
     y_wgts = np.full(y.shape[0],1.)
 
@@ -67,83 +67,147 @@ def computeClassWgt(y, y_test=None):
 
     return y_wgts, ytest_wgts, wgts
 
-def getNclass(df):
-    notBuilt = df[df['matchedTPsize']==-99999.]
-    combi = df[df['matchedTPsize']==0.]
-    simMatched = df[df['matchedTPsize']>0.].copy()
-    muMatched = df[ (df['bestMatchTP_pdgId']==13.) | (df['bestMatchTP_pdgId']==-13.) ]
+def setClassLabel(df):
+    expr = '''y_label = 0*(matchedTPsize==-99999.) +\
+                        1*(matchedTPsize==0.) +\
+                        2*((matchedTPsize>0.) &\
+                           ~((bestMatchTP_pdgId==13.) |\
+                             (bestMatchTP_pdgId==-13.))) +\
+                        3*((matchedTPsize>0.) &\
+                           ((bestMatchTP_pdgId==13.) |\
+                            (bestMatchTP_pdgId==-13.)))'''
+    df.eval(expr, engine='numexpr', inplace=True)
 
-    simMatched.drop(muMatched.index.values, inplace=True)
+    # df[df['y_label']<0][['bestMatchTP_pdgId']]
+    # df[df['y_label']==0][['bestMatchTP_pdgId']]
+    # df[df['y_label']==1][['bestMatchTP_pdgId']]
+    # df[df['y_label']==2][['bestMatchTP_pdgId']]
+    # df[df['y_label']==3][['bestMatchTP_pdgId']]
+    # df[df['y_label']>3][['bestMatchTP_pdgId']]
 
-    return notBuilt, combi, simMatched, muMatched
+    return df
 
-def filterClass(df):
+def filterClass(df, isGNN = False):
+
+    drop_list = [
+        'mva0',
+        'mva1',
+        'mva2',
+        'mva3',
+        'truePU',
+        'dir',
+        'tsos_detId',
+        'tsos_pt',
+        'tsos_eta',
+        'tsos_phi',
+        'tsos_glob_x',
+        'tsos_glob_y',
+        'tsos_glob_z',
+        'tsos_pt_val',
+        'tsos_hasErr',
+        # 'tsos_err0', # use only diagonal terms
+        'tsos_err1',
+        # 'tsos_err2',
+        'tsos_err3',
+        'tsos_err4',
+        # 'tsos_err5',
+        'tsos_err6',
+        'tsos_err7',
+        'tsos_err8',
+        # 'tsos_err9',
+        'tsos_err10',
+        'tsos_err11',
+        'tsos_err12',
+        'tsos_err13',
+        # 'tsos_err14',
+        'tsos_x',
+        'tsos_y',
+        'tsos_px',
+        'tsos_py',
+        'tsos_pz',
+        'dR_minDRL1SeedP',
+        'dPhi_minDRL1SeedP',
+        'dR_minDPhiL1SeedX',
+        'dPhi_minDPhiL1SeedX',
+        'dR_minDRL1SeedP_AtVtx',
+        'dPhi_minDRL1SeedP_AtVtx',
+        'dR_minDPhiL1SeedX_AtVtx',
+        'dPhi_minDPhiL1SeedX_AtVtx',
+        'dR_minDRL2SeedP',
+        'dPhi_minDRL2SeedP',
+        'dR_minDPhiL2SeedX',
+        'dPhi_minDPhiL2SeedX',
+        # 'dR_L1TkMuSeedP',
+        # 'dPhi_L1TkMuSeedP',
+        'bestMatchTP_pdgId',
+        'matchedTPsize',
+        'gen_pt',
+        'gen_eta',
+        'gen_phi',
+        'bestMatchTP_GenPt',
+        'bestMatchTP_GenEta',
+        'bestMatchTP_GenPhi',
+        'bestMatchTP_Gen_isPromptFinalState',
+        'bestMatchTP_Gen_isHardProcess',
+        'bestMatchTP_Gen_fromHardProcessFinalState',
+        'bestMatchTP_Gen_fromHardProcessDecayed',
+        'l1x1',
+        'l1y1',
+        'l1z1',
+        'hitx1',
+        'hity1',
+        'hitz1',
+        'l1x2',
+        'l1y2',
+        'l1z2',
+        'hitx2',
+        'hity2',
+        'hitz2',
+        'l1x3',
+        'l1y3',
+        'l1z3',
+        'hitx3',
+        'hity3',
+        'hitz3',
+        'l1x4',
+        'l1y4',
+        'l1z4',
+        'hitx4',
+        'hity4',
+        'hitz4'
+    ]
+    if not isGNN:
+        drop_list.append('nHits')
+
     df.drop(
-        [
-            'mva0',
-            'mva1',
-            'mva2',
-            'mva3',
-            'truePU',
-            'dir',
-            'tsos_detId',
-            'tsos_pt',
-            'tsos_eta',
-            'tsos_phi',
-            'tsos_glob_x',
-            'tsos_glob_y',
-            'tsos_glob_z',
-            'tsos_pt_val',
-            'tsos_hasErr',
-            # 'tsos_err0', # use only diagonal terms
-            'tsos_err1',
-            # 'tsos_err2',
-            'tsos_err3',
-            'tsos_err4',
-            # 'tsos_err5',
-            'tsos_err6',
-            'tsos_err7',
-            'tsos_err8',
-            # 'tsos_err9',
-            'tsos_err10',
-            'tsos_err11',
-            'tsos_err12',
-            'tsos_err13',
-            # 'tsos_err14',
-            'tsos_x',
-            'tsos_y',
-            'tsos_px',
-            'tsos_py',
-            'tsos_pz',
-            'dR_minDRL1SeedP',
-            'dPhi_minDRL1SeedP',
-            'dR_minDPhiL1SeedX',
-            'dPhi_minDPhiL1SeedX',
-            'dR_minDRL1SeedP_AtVtx',
-            'dPhi_minDRL1SeedP_AtVtx',
-            'dR_minDPhiL1SeedX_AtVtx',
-            'dPhi_minDPhiL1SeedX_AtVtx',
-            # 'dR_minDRL2SeedP',
-            # 'dPhi_minDRL2SeedP',
-            'dR_minDPhiL2SeedX',
-            'dPhi_minDPhiL2SeedX',
-            # 'dR_L1TkMuSeedP',
-            # 'dPhi_L1TkMuSeedP',
-            'bestMatchTP_pdgId',
-            'matchedTPsize',
-            'gen_pt',
-            'gen_eta',
-            'gen_phi'
-            ],
+        drop_list,
         axis=1, inplace=True
     )
 
     return df
 
-def hasL2(row):
-    if row['dR_minDRL2SeedP'] < 0.:
-        return 0
-    return 1
+def addDistHitL1Tk(df, addAbsDist = True):
+    for i in range(1,5):
+        exprd2 = f'''d2hitl1tk{i} = ((l1x{i}-hitx{i})**2 +\
+                                     (l1y{i}-hity{i})**2 +\
+                                     (l1z{i}-hitz{i})**2) *\
+                                    (hitx{i}+99999.)/(hitx{i}+99999.)'''
+        df.eval(exprd2, engine='numexpr', inplace=True)
+        # df[f'd2hitl1tk{i}'] = df[f'd2hitl1tk{i}'].fillna(-99999.)
+
+        exprexpd2 = f'''expd2hitl1tk{i} = exp(-d2hitl1tk{i}) *\
+                                          (hitx{i}+99999.)/(hitx{i}+99999.)'''
+        df.eval(exprexpd2, engine='numexpr', inplace=True)
+        # df[f'expd2hitl1tk{i}'] = df[f'expd2hitl1tk{i}'].fillna(-99999.)
+
+    if not addAbsDist:
+        df.drop(['d2hitl1tk1', 'd2hitl1tk2', 'd2hitl1tk3', 'd2hitl1tk4'],
+                axis=1,
+                inplace=True)
+
+    df = df.dropna(axis=1, how='all')
+
+    return df
 
 def stdTransform(x_train, x_test=None):
     Transformer = preprocessing.StandardScaler()

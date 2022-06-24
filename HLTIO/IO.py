@@ -56,7 +56,7 @@ def sampleByLabel(df, df_add = None, n = 500000):
     out = pd.DataFrame()
     df_tmp = None
     df_add_tmp = None
-    for il in range(4):
+    for il in range(2):
         df_tmp = df[df['y_label']==il]
         if df_tmp.shape[0] < n and df_add is not None:
             df_add_tmp = df_add[df_add['y_label']==il]

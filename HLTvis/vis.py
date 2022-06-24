@@ -202,7 +202,8 @@ def drawConfMat(confMat, plotname, dirname="plot", doNorm = True):
     plt.rc('xtick', labelsize=9)
     plt.rc('ytick', labelsize=11)
     fig, ax = plt.subplots()
-    names = ['Failed-to-build','Combinatorial','Sim-matched','Muon-matched']
+    #names = ['Failed-to-build','Combinatorial','Sim-matched','Muon-matched']
+    names = ['Backgrounds','Muon-matched']
 
     if doNorm:
         mat = ax.imshow(confMat,cmap='viridis', vmin=0., vmax=1.)

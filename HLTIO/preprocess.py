@@ -68,12 +68,20 @@ def computeClassWgt(y, y_test=None):
     return y_wgts, ytest_wgts, wgts
 
 def setClassLabel(df):
+    #expr = '''y_label = 0*(matchedTPsize==-99999.) +\
+    #                    1*(matchedTPsize==0.) +\
+    #                    2*((matchedTPsize>0.) &\
+    #                       ~((bestMatchTP_pdgId==13.) |\
+    #                         (bestMatchTP_pdgId==-13.))) +\
+    #                    3*((matchedTPsize>0.) &\
+    #                       ((bestMatchTP_pdgId==13.) |\
+    #                        (bestMatchTP_pdgId==-13.)))'''
     expr = '''y_label = 0*(matchedTPsize==-99999.) +\
-                        1*(matchedTPsize==0.) +\
-                        2*((matchedTPsize>0.) &\
+                        0*(matchedTPsize==0.) +\
+                        0*((matchedTPsize>0.) &\
                            ~((bestMatchTP_pdgId==13.) |\
                              (bestMatchTP_pdgId==-13.))) +\
-                        3*((matchedTPsize>0.) &\
+                        1*((matchedTPsize>0.) &\
                            ((bestMatchTP_pdgId==13.) |\
                             (bestMatchTP_pdgId==-13.)))'''
     df.eval(expr, engine='numexpr', inplace=True)

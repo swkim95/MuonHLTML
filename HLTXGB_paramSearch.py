@@ -30,11 +30,9 @@ def getBestParam(seedname,tag):
             return {'eta': 0.0649164398943043, 'gamma': 3.792188468267796, 'lambda': 0.9036363051887085, 'max_depth': 9, 'min_child_weight': 69.87920184424019}
     if seedname == 'NThltIter2FromL1':
         if tag == 'Barrel':
-            return {'eta': 0.07471612967872505, 'gamma': 0.5459376264843183, 'lambda': 0.2514971600800246, 'max_depth': 8, 'min_child_weight': 50.850111716830284} # For Phase2 D88 geo DYToLL sample (CMSSW_12_4_9)
-            # return {'eta': 0.11370670513701887, 'gamma': 0.8175150663273574, 'lambda': 0.5410160034001444, 'max_depth': 10, 'min_child_weight': 97.10666707815184}
+            return {'eta': 0.11370670513701887, 'gamma': 0.8175150663273574, 'lambda': 0.5410160034001444, 'max_depth': 10, 'min_child_weight': 97.10666707815184}
         if tag == 'Endcap': # modified by hand
-            return {'eta': 0.05193949743944483, 'gamma': 7.830393226211502, 'lambda': 0.12512690481428068, 'max_depth': 8, 'min_child_weight': 64.54020998165716} # For Phase2 D88 geo DYToLL sample (CMSSW_12_4_9)
-            # return {'eta': 0.33525154433566323, 'gamma': 0.7307823685738455, 'lambda': 0.31169463543440357, 'max_depth': 10, 'min_child_weight': 148.29348974514608}
+            return {'eta': 0.33525154433566323, 'gamma': 0.7307823685738455, 'lambda': 0.31169463543440357, 'max_depth': 10, 'min_child_weight': 148.29348974514608}
             # return {'eta': 0.05, 'gamma': 5.0, 'lambda': 2.0, 'max_depth': 8, 'min_child_weight': 1000.0}
 
     raise NameError('Please check seedname or tag!')
@@ -116,7 +114,7 @@ def doTrain(version, seed, seedname, tag, doLoad, stdTransPar=None):
 
     objective_ = lambda x: objective(x, dtrain)
 
-    best = hyperopt.fmin(fn=objective_, space=param_space, max_evals=100, algo=hyperopt.tpe.suggest, trials=trials)
+    best = hyperopt.fmin(fn=objective_, space=param_space, max_evals=256, algo=hyperopt.tpe.suggest, trials=trials)
 
     with open('model/'+version+'_'+tag+'_'+seedname+'_trial.pkl','wb') as output:
         pickle.dump(trials, output, pickle.HIGHEST_PROTOCOL)
@@ -184,7 +182,7 @@ def doXGB(version, seed, seedname, tag, doLoad, stdTransPar=None):
     if doLoad:
         bst.load_model('model/'+version+'_'+tag+'_'+seedname+'.model')
     else:
-        bst = xgb.train(param, dtrain, num_round, evallist, early_stopping_rounds=5, verbose_eval=10)
+        bst = xgb.train(param, dtrain, num_round, evallist, early_stopping_rounds=20, verbose_eval=10)
         print("Best logloss for " + tag + " model : ", bst.best_score)
         print("Best iteration # for " + tag + " model : ", bst.best_iteration)
         print("Best # of estimator fot " + tag + " model : ", bst.best_ntree_limit)
@@ -383,8 +381,8 @@ def run(version, seedname, seed, tag, doLoad = False):
 
     print("\n\nStart: %s|%s" % (seedname, tag))
 
-    doXGB(version, seed, seedname, tag, doLoad, stdTrans)
-    # doTrain(version, seed, seedname, tag, doLoad, stdTrans)
+    # doXGB(version, seed, seedname, tag, doLoad, stdTrans)
+    doTrain(version, seed, seedname, tag, doLoad, stdTrans)
 
     return seedname, tag, (time.time() - time_init)
 

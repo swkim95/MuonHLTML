@@ -30,9 +30,13 @@ def getBestParam(seedname,tag):
             return {'eta': 0.0649164398943043, 'gamma': 3.792188468267796, 'lambda': 0.9036363051887085, 'max_depth': 9, 'min_child_weight': 69.87920184424019}
     if seedname == 'NThltIter2FromL1':
         if tag == 'Barrel':
-            return {'eta': 0.11370670513701887, 'gamma': 0.8175150663273574, 'lambda': 0.5410160034001444, 'max_depth': 10, 'min_child_weight': 97.10666707815184}
+            return {'eta': 0.09896681714115409, 'gamma': 4.818008751954391, 'lambda': 2.50923931351139, 'max_depth': 7, 'min_child_weight': 61.236104132780646} # For Phase2 D88 geo DYToLL sample (CMSSW_12_4_9)
+            # return {'eta': 0.11370670513701887, 'gamma': 0.8175150663273574, 'lambda': 0.5410160034001444, 'max_depth': 10, 'min_child_weight': 97.10666707815184}
+            # return {'eta': 0.06370670513701887, 'gamma': 1.3175150663273574, 'lambda': 0.5410160034001444, 'max_depth': 10, 'min_child_weight': 150.10666707815184}
         if tag == 'Endcap': # modified by hand
-            return {'eta': 0.33525154433566323, 'gamma': 0.7307823685738455, 'lambda': 0.31169463543440357, 'max_depth': 10, 'min_child_weight': 148.29348974514608}
+            return {'eta': 0.08351333720744908, 'gamma': 1.5560701616781736, 'lambda': 1.9567222428051347, 'max_depth': 10, 'min_child_weight': 111.3682854568381} # For Phase2 D88 geo DYToLL sample (CMSSW_12_4_9)
+            # return {'eta': 0.33525154433566323, 'gamma': 0.7307823685738455, 'lambda': 0.31169463543440357, 'max_depth': 10, 'min_child_weight': 148.29348974514608}
+            # return {'eta': 0.13525154433566323, 'gamma': 1.3307823685738455, 'lambda': 0.31169463543440357, 'max_depth': 10, 'min_child_weight': 148.29348974514608}
             # return {'eta': 0.05, 'gamma': 5.0, 'lambda': 2.0, 'max_depth': 8, 'min_child_weight': 1000.0}
 
     raise NameError('Please check seedname or tag!')
@@ -59,13 +63,13 @@ def objective(params,dTrain):
     return xgb_cv['test-mlogloss-mean'].min()
 
 def doTrain(version, seed, seedname, tag, doLoad, stdTransPar=None):
-    plotdir = 'plot_'+version
+    plotdir = 'plot_'+version+'/'+tag
     if not os.path.isdir(plotdir):
         os.makedirs(plotdir)
 
     colname = list(seed[0].columns)
     print(colname)
-    print(seedname+"|"+tag + r' C0: %d, C1: %d, C2: %d, C3: %d' % \
+    print(seedname+" | "+tag + r' C0: %d, C1: %d, C2: %d, C3: %d' % \
         ( (seed[1]==0).sum(), (seed[1]==1).sum(), (seed[1]==2).sum(), (seed[1]==3).sum() ) )
 
     if doLoad :
@@ -73,7 +77,9 @@ def doTrain(version, seed, seedname, tag, doLoad, stdTransPar=None):
         return
 
     x_train, x_mean, x_std = preprocess.stdTransform(seed[0])
-    with open("scalefiles/%s_%s_%s_scale.txt" % (version, tag, seedname), "w") as f_scale:
+    if not os.path.isdir("scalefiles/doTrain/"):
+        os.makedirs("scalefiles/doTrain/")
+    with open("scalefiles/doTrain/%s_%s_%s_scale.txt" % (version, tag, seedname), "w") as f_scale:
         f_scale.write( "%s_%s_%s_ScaleMean = %s\n" % (version, tag, seedname, str(x_mean.tolist())) )
         f_scale.write( "%s_%s_%s_ScaleStd  = %s\n" % (version, tag, seedname, str(x_std.tolist())) )
         f_scale.close()
@@ -95,7 +101,8 @@ def doTrain(version, seed, seedname, tag, doLoad, stdTransPar=None):
 
     objective_ = lambda x: objective(x, dtrain)
 
-    best = hyperopt.fmin(fn=objective_, space=param_space, max_evals=256, algo=hyperopt.tpe.suggest, trials=trials)
+    # best = hyperopt.fmin(fn=objective_, space=param_space, max_evals=256, algo=hyperopt.tpe.suggest, trials=trials)
+    best = hyperopt.fmin(fn=objective_, space=param_space, max_evals=100, algo=hyperopt.tpe.suggest, trials=trials)
 
     with open('model/'+version+'_'+tag+'_'+seedname+'_trial.pkl','wb') as output:
         pickle.dump(trials, output, pickle.HIGHEST_PROTOCOL)
@@ -106,16 +113,17 @@ def doTrain(version, seed, seedname, tag, doLoad, stdTransPar=None):
     return
 
 def doXGB(version, seed, seedname, tag, doLoad, stdTransPar=None):
-    plotdir = 'plot_'+version
+    plotdir = 'plot_'+version+'/'+tag
     if not os.path.isdir(plotdir):
         os.makedirs(plotdir)
 
     colname = list(seed[0].columns)
     print(colname)
-    print(seedname+"|"+tag + r' C0: %d, C1: %d, C2: %d, C3: %d' % \
+    print(seedname+" | "+tag + r' C0: %d, C1: %d, C2: %d, C3: %d' % \
         ( (seed[1]==0).sum(), (seed[1]==1).sum(), (seed[1]==2).sum(), (seed[1]==3).sum() ) )
 
-    x_train, x_test, y_train, y_test = preprocess.split(seed[0], seed[1],0.2)
+    # x_train, x_test, y_train, y_test = preprocess.split(seed[0], seed[1], 0.2)
+    x_train, x_test, y_train, y_test = preprocess.split(seed[0], seed[1], 0.4)
 
     if doLoad and stdTransPar==None:
         print("doLoad is True but stdTransPar==None --> return")
@@ -135,25 +143,29 @@ def doXGB(version, seed, seedname, tag, doLoad, stdTransPar=None):
     dtrain = xgb.DMatrix(x_train, weight=y_wgtsTrain, label=y_train, feature_names=colname)
     dtest  = xgb.DMatrix(x_test,  weight=y_wgtsTest,  label=y_test,  feature_names=colname)
 
-    evallist = [(dtest, 'eval'), (dtrain, 'train')]
+    # evallist = [(dtest, tag+'_eval'), (dtrain, tag+'_train')]
+    evallist = [(dtrain, tag+'_train'), (dtest, tag+'_eval')]
 
     param = getBestParam(seedname,tag)
 
     param['objective'] = 'multi:softprob'
     param['num_class'] = 4
     param['subsample'] = 0.5
-    param['eval_metric'] = 'mlogloss'
+    param['eval_metric'] = ['auc', 'mlogloss']
     param['tree_method'] = 'gpu_hist'
     param['nthread'] = 4
 
-    num_round = 200
+    num_round = 300
 
     bst = xgb.Booster(param)
 
     if doLoad:
         bst.load_model('model/'+version+'_'+tag+'_'+seedname+'.model')
     else:
-        bst = xgb.train(param, dtrain, num_round, evallist, early_stopping_rounds=20, verbose_eval=50)
+        bst = xgb.train(param, dtrain, num_round, evallist, early_stopping_rounds=10, verbose_eval=10)
+        print("Best logloss for " + tag + " model : ", bst.best_score)
+        print("Best iteration # for " + tag + " model : ", bst.best_iteration)
+        print("Best # of estimator fot " + tag + " model : ", bst.best_ntree_limit)
         bst.save_model('model/'+version+'_'+tag+'_'+seedname+'.model')
 
     dTrainPredict    = bst.predict(dtrain)

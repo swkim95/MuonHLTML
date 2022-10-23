@@ -96,29 +96,36 @@ if __name__ == '__main__':
         sys.exit()
 
     model_path = sys.argv[1]
-    n_variables = sys.argv[2] if len(sys.argv) > 2 else 29
+    n_variables = sys.argv[2] if len(sys.argv) > 2 else 14
     n_variables = int(n_variables)
 
     bst = xgb.Booster()
     bst.load_model(model_path)
     model_all = bst.get_dump()
 
-    model = [ [], [], [], [] ]
-    for i, l in enumerate(model_all):
-        if i%4 == 0:
-            model[0].append(l)
-        elif i%4 == 1:
-            model[1].append(l)
-        elif i%4 == 2:
-            model[2].append(l)
-        elif i%4 == 3:
-            model[3].append(l)
+    
+    model = []
+    for l in (model_all):
+            model.append(l)
+
+    # model = [ [], [], [], [] ]
+    # for i, l in enumerate(model_all):
+    #     if i%4 == 0:
+    #         model[0].append(l)
+    #     elif i%4 == 1:
+    #         model[1].append(l)
+    #     elif i%4 == 2:
+    #         model[2].append(l)
+    #     elif i%4 == 3:
+    #         model[3].append(l)
 
     _input_variables = [ ('f%d' % i , 'F') for i in range(n_variables) ]
 
-    for c in range(4):
+    # for c in range(4):
+    for c in range(1):
         output_name = 'xml/' + model_path.split("/")[-1].replace(".model", "_%d.xml"%c)
-        convert_model(model[c], input_variables=_input_variables, output_xml=output_name)
+        # convert_model(model[c], input_variables=_input_variables, output_xml=output_name)
+        convert_model(model, input_variables=_input_variables, output_xml=output_name)
 
 
 

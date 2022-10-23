@@ -30,17 +30,9 @@ def getBestParam(seedname,tag):
             return {'eta': 0.0649164398943043, 'gamma': 3.792188468267796, 'lambda': 0.9036363051887085, 'max_depth': 9, 'min_child_weight': 69.87920184424019}
     if seedname == 'NThltIter2FromL1':
         if tag == 'Barrel':
-            # return {'eta': 0.07471612967872505, 'gamma': 0.5459376264843183, 'lambda': 0.2514971600800246, 'max_depth': 8, 'min_child_weight': 50.850111716830284} # For Phase2 D88 geo DYToLL sample (CMSSW_12_4_9)
-            # return {'colsample_bytree': 0.6016683272728618, 'eta': 0.0670423427487355, 'gamma': 4.977152413607679, 'lambda': 1.297636274357141, 'max_delta_step': 15, 'max_depth': 9, 'min_child_weight': 10.799065904612668, 'subsample': 0.4703588457414026}  # For Phase2 D88 geo DYToLL sample (CMSSW_12_4_9) ver 1 with additional param.
-            return {'colsample_bytree': 0.1922953060797824, 'eta': 0.04747731227428281, 'gamma': 0.6672311494841515, 'lambda': 3.390243822876333, 'max_delta_step': 13, 'max_depth': 19, 'min_child_weight': 51.25486581673683, 'subsample': 0.999444817307483} # For Phase2 D88 geo DYToLL sample (CMSSW_12_4_9) ver 2 with additional param.
-            # return {'colsample_bytree': 0.6267040015666346, 'eta': 0.3888815630217647, 'gamma': 0.018945963383829145, 'lambda': 2.0198626908233477, 'max_delta_step': 1, 'max_depth': 10, 'min_child_weight': 67.77710567690377, 'subsample': 0.9716058682393386} # For Phase2 D88 geo DYToLL sample (CMSSW_12_4_9) ver 3 with additional param.
-            # return {'eta': 0.11370670513701887, 'gamma': 0.8175150663273574, 'lambda': 0.5410160034001444, 'max_depth': 10, 'min_child_weight': 97.10666707815184}
+            return {'colsample_bytree': 0.6016683272728618, 'eta': 0.0670423427487355, 'gamma': 4.977152413607679, 'lambda': 1.297636274357141, 'max_delta_step': 15, 'max_depth': 9, 'min_child_weight': 10.799065904612668, 'subsample': 0.4703588457414026}
         if tag == 'Endcap': # modified by hand
-            # return {'eta': 0.05193949743944483, 'gamma': 7.830393226211502, 'lambda': 0.12512690481428068, 'max_depth': 8, 'min_child_weight': 64.54020998165716} # For Phase2 D88 geo DYToLL sample (CMSSW_12_4_9) ver 1
-            # return {'colsample_bytree': 0.7241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 2, 'max_depth': 10, 'min_child_weight': 12.738109984633256, 'subsample': 0.9617401201637726} # For Phase2 D88 geo DYToLL sample (CMSSW_12_4_9) ver 1 with additional param.
-            return {'colsample_bytree': 0.7241256911903424, 'eta': 0.043626205679326355, 'gamma': 1.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 2, 'max_depth': 8, 'min_child_weight': 30.738109984633256, 'subsample': 0.5, 'scale_pos_weight' : 25} # Comb_26
-            # return {'colsample_bytree': 0.1536363786655786, 'eta': 0.04268631982337989, 'gamma': 9.205893588073373, 'lambda': 4.307812603016457, 'max_delta_step': 2, 'max_depth': 10, 'min_child_weight': 52.49366123997185, 'subsample': 0.514031761468398, 'scale_pos_weight' : 25}  # For Phase2 D88 geo DYToLL sample (CMSSW_12_4_9) ver 2 with additional param.
-            # return {'colsample_bytree': 0.5862214952661692, 'eta': 0.02431079306130022, 'gamma': 1.818182456255986, 'lambda': 3.0708852521803567, 'max_delta_step': 4, 'max_depth': 14, 'min_child_weight': 52.459016293024455, 'subsample': 0.9959666501445276, 'scale_pos_weight' : 25} # For Phase2 D88 geo DYToLL sample (CMSSW_12_4_9) ver 3 with additional param.
+            return {'colsample_bytree': 0.7241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 2, 'max_depth': 10, 'min_child_weight': 12.738109984633256, 'subsample': 0.9617401201637726}
 
     raise NameError('Please check seedname or tag!')
 
@@ -63,18 +55,18 @@ def objective(params,dTrain):
         'nthread':4
     }
 
-    xgb_cv = xgb.cv(dtrain=dTrain,nfold=5,num_boost_round=300,metrics='logloss',early_stopping_rounds=50,params=param)
+    xgb_cv = xgb.cv(dtrain=dTrain,nfold=5,num_boost_round=300,metrics='logloss',early_stopping_rounds=20,params=param)
 
     return xgb_cv['test-logloss-mean'].min()
 
 def doTrain(version, seed, seedname, tag, doLoad, stdTransPar=None):
-    plotdir = 'plot/plot_'+version+'/'+tag
+    plotdir = 'plot_'+version+'/'+tag
     if not os.path.isdir(plotdir):
         os.makedirs(plotdir)
 
     colname = list(seed[0].columns)
     print(colname)
-    print(seedname+" | "+tag + r' Bkg : %d, Sig : %d' % \
+    print(seedname+" | "+tag + r' C0, C1, C2 : %d, C3: %d' % \
         ( (seed[1]==0).sum(), (seed[1]==1).sum() ) )
 
     if doLoad :
@@ -120,16 +112,16 @@ def doTrain(version, seed, seedname, tag, doLoad, stdTransPar=None):
     return
 
 def doXGB(version, seed, seedname, tag, doLoad, stdTransPar=None):
-    plotdir = 'plot/plot_'+version+'/'+tag
+    plotdir = 'plot_'+version+'/'+tag
     if not os.path.isdir(plotdir):
         os.makedirs(plotdir)
 
     colname = list(seed[0].columns)
     print(colname)
-    print(seedname+"|"+tag + r' Bkg : %d, Sig : %d' % \
+    print(seedname+"|"+tag + r' C0, C1, C2: %d, C3: %d' % \
         ( (seed[1]==0).sum(), (seed[1]==1).sum() ) )
 
-    x_train, x_test, y_train, y_test = preprocess.split(seed[0], seed[1], 0.3)
+    x_train, x_test, y_train, y_test = preprocess.split(seed[0], seed[1],0.4)
 
     if doLoad and stdTransPar==None:
         print("doLoad is True but stdTransPar==None --> return")
@@ -138,8 +130,8 @@ def doXGB(version, seed, seedname, tag, doLoad, stdTransPar=None):
     if stdTransPar==None:
         x_train, x_test, x_mean, x_std = preprocess.stdTransform(x_train, x_test)
         with open("scalefiles/%s_%s_%s_scale.txt" % (version, tag, seedname), "w") as f_scale:
-            f_scale.write( "%s\n" %(str(x_mean.tolist())) )
-            f_scale.write( "%s\n" %(str(x_std.tolist())) )
+            f_scale.write( str(x_mean.tolist()) )
+            f_scale.write( str(x_std.tolist()) )
             f_scale.close()
     else:
         x_train, x_test = preprocess.stdTransformFixed(x_train, x_test, stdTransPar)
@@ -151,29 +143,22 @@ def doXGB(version, seed, seedname, tag, doLoad, stdTransPar=None):
 
     evallist = [(dtrain, tag+'_train'), (dtest, tag+'_eval')]
 
-
     param = getBestParam(seedname,tag)
 
     param['objective'] = 'binary:logistic'
     param['eval_metric'] = ['auc', 'logloss']
-    if tag == 'Endcap' :
-        param['eval_metric'] = ['logloss', 'auc']
+    param['subsample'] = 0.5
     param['tree_method'] = 'gpu_hist'
     param['nthread'] = 4
 
-    num_round = 1000
-    if tag == 'Endcap' :
-        num_round = 2000
-    early_stopping_rounds = 50
-    if tag == 'Endcap' :
-        early_stopping_rounds = 50
+    num_round = 300
 
     bst = xgb.Booster(param)
 
     if doLoad:
         bst.load_model('model/'+version+'_'+tag+'_'+seedname+'.model')
     else:
-        bst = xgb.train(param, dtrain, num_round, evallist, early_stopping_rounds=early_stopping_rounds, verbose_eval=10)
+        bst = xgb.train(param, dtrain, num_round, evallist, early_stopping_rounds=5, verbose_eval=10)
         print("Best logloss for " + tag + " model : ", bst.best_score)
         print("Best iteration # for " + tag + " model : ", bst.best_iteration)
         print("Best # of estimator fot " + tag + " model : ", bst.best_ntree_limit)
@@ -272,6 +257,149 @@ def doXGB(version, seed, seedname, tag, doLoad, stdTransPar=None):
 
     return
 
+def doXGB_gridSearch(version, seed, seedname, tag, doLoad, param, param_set_name, stdTransPar=None):
+    plotdir = 'plot_'+version+'/'+tag+'/'+param_set_name+'/'
+    if not os.path.isdir(plotdir):
+        os.makedirs(plotdir)
+
+    colname = list(seed[0].columns)
+    print(colname)
+    print(seedname+"|"+tag + r' C0, C1, C2: %d, C3: %d' % \
+        ( (seed[1]==0).sum(), (seed[1]==1).sum() ) )
+
+    x_train, x_test, y_train, y_test = preprocess.split(seed[0], seed[1],0.4)
+
+    if doLoad and stdTransPar==None:
+        print("doLoad is True but stdTransPar==None --> return")
+        return
+
+    if stdTransPar==None:
+        x_train, x_test, x_mean, x_std = preprocess.stdTransform(x_train, x_test)
+        with open("scalefiles/%s_%s_%s_%s_scale.txt" % (version, tag, seedname, param_set_name), "w") as f_scale:
+            f_scale.write( str(x_mean.tolist()) )
+            f_scale.write( str(x_std.tolist()) )
+            f_scale.close()
+    else:
+        x_train, x_test = preprocess.stdTransformFixed(x_train, x_test, stdTransPar)
+
+    y_wgtsTrain, y_wgtsTest, wgts = preprocess.computeClassWgt(y_train, y_test)
+
+    dtrain = xgb.DMatrix(x_train, weight=y_wgtsTrain, label=y_train, feature_names=colname)
+    dtest  = xgb.DMatrix(x_test,  weight=y_wgtsTest,  label=y_test,  feature_names=colname)
+
+    evallist = [(dtrain, tag+'_train'), (dtest, tag+'_eval')]
+
+    param['objective'] = 'binary:logistic'
+    param['eval_metric'] = ['auc', 'logloss']
+    param['tree_method'] = 'gpu_hist'
+    param['nthread'] = 4
+
+    num_round = 600
+
+    bst = xgb.Booster(param)
+
+    if doLoad:
+        bst.load_model('model/'+version+'_'+tag+'_'+seedname+'_'+param_set_name+'.model')
+    else:
+        bst = xgb.train(param, dtrain, num_round, evallist, early_stopping_rounds=10, verbose_eval=10)
+        print("Best logloss for " + tag + " model with param " + param_set_name, bst.best_score)
+        print("Best iteration # for " + tag + " model with param " + param_set_name, bst.best_iteration)
+        print("Best # of estimator fot " + tag + " model with param " + param_set_name, bst.best_ntree_limit)
+        bst.save_model('model/'+version+'_'+tag+'_'+seedname+'_'+param_set_name+'.model')
+
+    dTrainPredict    = bst.predict(dtrain)
+    dTestPredict     = bst.predict(dtest)
+
+    dTrainPredictRaw = bst.predict(dtrain, output_margin=True)
+    dTestPredictRaw  = bst.predict(dtest,  output_margin=True)
+
+    labelTrain       = postprocess.binaryLabel(dTrainPredict)
+    labelTest        = postprocess.binaryLabel(dTestPredict)
+
+    # -- ROC -- #
+    for cat in range(2):
+        if ( np.asarray(y_train==cat,dtype=int).sum() < 1 ) or ( np.asarray(y_test==cat,dtype=int).sum() < 1 ): continue
+
+        fpr_Train, tpr_Train, thr_Train, AUC_Train, fpr_Test, tpr_Test, thr_Test, AUC_Test = postprocess.calROC(
+            dTrainPredict,
+            dTestPredict,
+            np.asarray(y_train==cat,dtype=int),
+            np.asarray(y_test==cat, dtype=int)
+        )
+        vis.drawROC( fpr_Train, tpr_Train, AUC_Train, fpr_Test, tpr_Test, AUC_Test, version+'_'+tag+'_'+seedname+r'_logROC_cat%d' % cat, plotdir)
+        vis.drawROC2(fpr_Train, tpr_Train, AUC_Train, fpr_Test, tpr_Test, AUC_Test, version+'_'+tag+'_'+seedname+r'_linROC_cat%d' % cat, plotdir)
+        vis.drawThr(  thr_Train, tpr_Train, thr_Test, tpr_Test,  version+'_'+tag+'_'+seedname+r'_logThr_cat%d' % cat, plotdir)
+        vis.drawThr2( thr_Train, tpr_Train, thr_Test, tpr_Test,  version+'_'+tag+'_'+seedname+r'_linThr_cat%d' % cat, plotdir)
+
+        fpr_Train, tpr_Train, thr_Train, AUC_Train, fpr_Test, tpr_Test, thr_Test, AUC_Test = postprocess.calROC(
+            postprocess.sigmoid( dTrainPredictRaw ),
+            postprocess.sigmoid( dTestPredictRaw ),
+            np.asarray(y_train==cat,dtype=int),
+            np.asarray(y_test==cat, dtype=int)
+        )
+        vis.drawROC( fpr_Train, tpr_Train, AUC_Train, fpr_Test, tpr_Test, AUC_Test, version+'_'+tag+'_'+seedname+r'_logROCSigm_cat%d' % cat, plotdir)
+        vis.drawROC2(fpr_Train, tpr_Train, AUC_Train, fpr_Test, tpr_Test, AUC_Test, version+'_'+tag+'_'+seedname+r'_linROCSigm_cat%d' % cat, plotdir)
+        vis.drawThr(  thr_Train, tpr_Train, thr_Test, tpr_Test,  version+'_'+tag+'_'+seedname+r'_logThrSigm_cat%d' % cat, plotdir)
+        vis.drawThr2( thr_Train, tpr_Train, thr_Test, tpr_Test,  version+'_'+tag+'_'+seedname+r'_linThrSigm_cat%d' % cat, plotdir)
+    # -- ROC -- #
+
+    # -- Confusion matrix -- #
+    confMat, confMatAbs = postprocess.confMat(y_test,labelTest)
+    vis.drawConfMat(confMat,   version+'_'+tag+'_'+seedname+'_testConfMatNorm', plotdir)
+    vis.drawConfMat(confMatAbs,version+'_'+tag+'_'+seedname+'_testConfMat', plotdir, doNorm = False)
+
+    confMatTrain, confMatTrainAbs = postprocess.confMat(y_train,labelTrain)
+    vis.drawConfMat(confMatTrain,   version+'_'+tag+'_'+seedname+'_trainConfMatNorm', plotdir)
+    vis.drawConfMat(confMatTrainAbs,version+'_'+tag+'_'+seedname+'_trainConfMat', plotdir, doNorm = False)
+    # -- #
+
+    # -- Score -- #
+    TrainScoreCat3 = dTrainPredict
+    TestScoreCat3  = dTestPredict
+
+    TrainScoreCat3Sig_Xgb = np.array( [ score for i, score in enumerate(TrainScoreCat3) if y_train[i]==1 ] )
+    TrainScoreCat3Bkg_Xgb = np.array( [ score for i, score in enumerate(TrainScoreCat3) if y_train[i]!=1 ] )
+    vis.drawScore(TrainScoreCat3Sig_Xgb, TrainScoreCat3Bkg_Xgb, version+'_'+tag+'_'+seedname+r'_trainScore_cat1', plotdir)
+
+    TestScoreCat3Sig_Xgb = np.array( [ score for i, score in enumerate(TestScoreCat3) if y_test[i]==1 ] )
+    TestScoreCat3Bkg_Xgb = np.array( [ score for i, score in enumerate(TestScoreCat3) if y_test[i]!=1 ] )
+    vis.drawScore(TestScoreCat3Sig_Xgb, TestScoreCat3Bkg_Xgb, version+'_'+tag+'_'+seedname+r'_testScore_cat1', plotdir)
+
+    TrainScoreCat3 = postprocess.sigmoid( dTrainPredictRaw )
+    TestScoreCat3  = postprocess.sigmoid( dTestPredictRaw )
+
+    TrainScoreCat3Sig_Sigm = np.array( [ score for i, score in enumerate(TrainScoreCat3) if y_train[i]==1 ] )
+    TrainScoreCat3Bkg_Sigm = np.array( [ score for i, score in enumerate(TrainScoreCat3) if y_train[i]!=1 ] )
+    vis.drawScore(TrainScoreCat3Sig_Sigm, TrainScoreCat3Bkg_Sigm, version+'_'+tag+'_'+seedname+r'_trainScoreSigm_cat1', plotdir)
+
+    TestScoreCat3Sig_Sigm = np.array( [ score for i, score in enumerate(TestScoreCat3) if y_test[i]==1 ] )
+    TestScoreCat3Bkg_Sigm = np.array( [ score for i, score in enumerate(TestScoreCat3) if y_test[i]!=1 ] )
+    vis.drawScore(TestScoreCat3Sig_Sigm, TestScoreCat3Bkg_Sigm, version+'_'+tag+'_'+seedname+r'_testScoreSigm_cat1', plotdir)
+
+    TrainScoreCat3 = dTrainPredictRaw
+    TestScoreCat3  = dTestPredictRaw
+
+    TrainScoreCat3Sig_Raw = np.array( [ score for i, score in enumerate(TrainScoreCat3) if y_train[i]==1 ] )
+    TrainScoreCat3Bkg_Raw = np.array( [ score for i, score in enumerate(TrainScoreCat3) if y_train[i]!=1 ] )
+    vis.drawScoreRaw(TrainScoreCat3Sig_Raw, TrainScoreCat3Bkg_Raw, version+'_'+tag+'_'+seedname+r'_trainScoreRaw_cat1', plotdir)
+
+    TestScoreCat3Sig_Raw = np.array( [ score for i, score in enumerate(TestScoreCat3) if y_test[i]==1 ] )
+    TestScoreCat3Bkg_Raw = np.array( [ score for i, score in enumerate(TestScoreCat3) if y_test[i]!=1 ] )
+    vis.drawScoreRaw(TestScoreCat3Sig_Raw, TestScoreCat3Bkg_Raw, version+'_'+tag+'_'+seedname+r'_testScoreRaw_cat1', plotdir)
+    # -- #
+
+    # -- Importance -- #
+    if not doLoad:
+        gain = bst.get_score( importance_type='gain')
+        cover = bst.get_score(importance_type='cover')
+        vis.drawImportance(gain,cover,colname,version+'_'+tag+'_'+seedname+'_importance', plotdir)
+    # -- #
+
+    with open('model/'+version+'_'+tag+'_'+seedname+'_'+param_set_name+'_plotObj.pkl','wb') as output:
+        pickle.dump([confMat, confMatAbs, TrainScoreCat3Sig_Xgb, TrainScoreCat3Bkg_Xgb, TestScoreCat3Sig_Xgb, TestScoreCat3Bkg_Xgb, TrainScoreCat3Sig_Raw, TrainScoreCat3Bkg_Raw, TestScoreCat3Sig_Raw, TestScoreCat3Bkg_Raw], output, pickle.HIGHEST_PROTOCOL)
+
+    return
+
 def run_quick(seedname, doLoad = False):
 
     ntuple_path = '/home/common/TT_seedNtuple_GNN_v200622/ntuple_94.root'
@@ -335,6 +463,100 @@ def run(version, seedname, seed, tag, doLoad = False):
 
     doXGB(version, seed, seedname, tag, doLoad, stdTrans)
     # doTrain(version, seed, seedname, tag, doLoad, stdTrans)
+
+    return seedname, tag, (time.time() - time_init)
+
+def run_gridSearch(version, seedname, seed, tag, doLoad = False):
+    time_init = time.time()
+
+    stdTrans = None
+    if doLoad:
+        scalefile = open("scalefiles/"+version+"_"+tag+"_"+seedname+"_scale.txt",'r')
+        scaleMean = json.loads(scalefile.readline())
+        scaleStd  = json.loads(scalefile.readline())
+        stdTrans = [ scaleMean, scaleStd ]
+
+    print("\n\nStart: %s|%s" % (seedname, tag))
+
+
+    barrel_param_set = [
+        {'colsample_bytree': 0.6016683272728618, 'eta': 0.0670423427487355, 'gamma': 4.977152413607679, 'lambda': 1.297636274357141, 'max_delta_step': 15, 'max_depth': 9, 'min_child_weight': 10.799065904612668, 'subsample': 0.4703588457414026}
+    ]
+    barrel_param_name_set = [
+        'Best param'
+    ]
+    endcap_param_set = [
+        {'colsample_bytree': 0.7241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 2, 'max_depth': 5, 'min_child_weight': 12.738109984633256, 'subsample': 0.5},
+        {'colsample_bytree': 0.7241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 2, 'max_depth': 6, 'min_child_weight': 12.738109984633256, 'subsample': 0.5},
+        {'colsample_bytree': 0.7241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 2, 'max_depth': 7, 'min_child_weight': 12.738109984633256, 'subsample': 0.5},
+        {'colsample_bytree': 0.7241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 2, 'max_depth': 8, 'min_child_weight': 12.738109984633256, 'subsample': 0.5},
+        {'colsample_bytree': 0.7241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 2, 'max_depth': 9, 'min_child_weight': 12.738109984633256, 'subsample': 0.5},
+
+        {'colsample_bytree': 0.7241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 2, 'max_depth': 5, 'min_child_weight': 12.738109984633256, 'subsample': 0.2},
+        {'colsample_bytree': 0.7241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 2, 'max_depth': 5, 'min_child_weight': 12.738109984633256, 'subsample': 0.3},
+        {'colsample_bytree': 0.7241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 2, 'max_depth': 5, 'min_child_weight': 12.738109984633256, 'subsample': 0.4},
+        {'colsample_bytree': 0.7241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 2, 'max_depth': 5, 'min_child_weight': 12.738109984633256, 'subsample': 0.6},
+        {'colsample_bytree': 0.7241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 2, 'max_depth': 5, 'min_child_weight': 12.738109984633256, 'subsample': 0.7},
+
+        {'colsample_bytree': 0.7241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 6, 'max_depth': 5, 'min_child_weight': 12.738109984633256, 'subsample': 0.5},
+        {'colsample_bytree': 0.7241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 7, 'max_depth': 5, 'min_child_weight': 12.738109984633256, 'subsample': 0.5},
+        {'colsample_bytree': 0.7241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 8, 'max_depth': 5, 'min_child_weight': 12.738109984633256, 'subsample': 0.5},
+        {'colsample_bytree': 0.7241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 9, 'max_depth': 5, 'min_child_weight': 12.738109984633256, 'subsample': 0.5},
+        {'colsample_bytree': 0.7241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 10, 'max_depth': 5, 'min_child_weight': 12.738109984633256, 'subsample': 0.5},
+
+        {'colsample_bytree': 0.2241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 10, 'max_depth': 5, 'min_child_weight': 12.738109984633256, 'subsample': 0.5},
+        {'colsample_bytree': 0.3241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 10, 'max_depth': 5, 'min_child_weight': 12.738109984633256, 'subsample': 0.5},
+        {'colsample_bytree': 0.4241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 10, 'max_depth': 5, 'min_child_weight': 12.738109984633256, 'subsample': 0.5},
+        {'colsample_bytree': 0.5241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 10, 'max_depth': 5, 'min_child_weight': 12.738109984633256, 'subsample': 0.5},
+        {'colsample_bytree': 0.6241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 10, 'max_depth': 5, 'min_child_weight': 12.738109984633256, 'subsample': 0.5},
+
+        {'colsample_bytree': 0.7241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 10, 'max_depth': 5, 'min_child_weight': 12.738109984633256, 'subsample': 0.5},
+        {'colsample_bytree': 0.7241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 10, 'max_depth': 5, 'min_child_weight': 60.738109984633256, 'subsample': 0.5},
+        {'colsample_bytree': 0.7241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 10, 'max_depth': 5, 'min_child_weight': 120.738109984633256, 'subsample': 0.5},
+        {'colsample_bytree': 0.7241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 10, 'max_depth': 5, 'min_child_weight': 600.738109984633256, 'subsample': 0.5},
+        {'colsample_bytree': 0.7241256911903424, 'eta': 0.053626205679326355, 'gamma': 0.8087102759091294, 'lambda': 2.990197133799129, 'max_delta_step': 10, 'max_depth': 5, 'min_child_weight': 1200.738109984633256, 'subsample': 0.5}
+    ]
+    endcap_param_name_set = [
+        'MaxDepth_5',
+        'MaxDepth_6',
+        'MaxDepth_7',
+        'MaxDepth_8', 
+        'MaxDepth_9', ## this
+
+        'subsample_2',
+        'subsample_3',
+        'subsample_4',
+        'subsample_6', 
+        'subsample_7', ## this
+
+        'MaxDeltaStep_6', 
+        'MaxDeltaStep_7',
+        'MaxDeltaStep_8',
+        'MaxDeltaStep_9', ## this
+        'MaxDeltaStep_10',
+
+        'Comsample_2',
+        'Comsample_3',
+        'Comsample_4', ## this
+        'Comsample_5', 
+        'Comsample_6',
+
+        'MinChildWeight_12', ## this
+        'MinChildWeight_60',
+        'MinChildWeight_120', 
+        'MinChildWeight_600', 
+        'MinChildWeight_1200'
+    ]
+    if seedname == 'NThltIter2FromL1' :
+        if tag == 'Barrel' :
+            for barrel_param, barrel_param_name in zip(barrel_param_set, barrel_param_name_set) :
+                doXGB_gridSearch(version, seed, seedname, tag, doLoad, barrel_param, barrel_param_name, stdTrans)
+        if tag == 'Endcap' :
+            for endcap_param, endcap_param_name in zip(endcap_param_set, endcap_param_name_set) :
+                doXGB_gridSearch(version, seed, seedname, tag, doLoad, endcap_param, endcap_param_name, stdTrans)
+    else : 
+        print("No such seed name")
+        return
 
     return seedname, tag, (time.time() - time_init)
 
@@ -527,7 +749,8 @@ if __name__ == '__main__':
         run_list.append((VER, seedname, seed_label_E, 'Endcap', DoLoad))
 
     pool = multiprocessing.Pool(processes=min(16,len(run_list)))
-    results_run = pool.starmap(run,run_list)
+    # results_run = pool.starmap(run,run_list)
+    results_run = pool.starmap(run_gridSearch,run_list)
     pool.close()
     pool.join()
     gc.collect()

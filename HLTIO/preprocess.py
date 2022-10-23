@@ -76,32 +76,24 @@ def setClassLabel(df):
     #                    3*((matchedTPsize>0.) &\
     #                       ((bestMatchTP_pdgId==13.) |\
     #                        (bestMatchTP_pdgId==-13.)))'''
-    expr = '''y_label = 0*(matchedTPsize==-99999.) +\
-                        0*(matchedTPsize==0.) +\
-                        0*((matchedTPsize>0.) &\
-                           ~((bestMatchTP_pdgId==13.) |\
-                             (bestMatchTP_pdgId==-13.))) +\
+    expr = '''y_label = 0*(~((matchedTPsize>0.) &\
+                           ((bestMatchTP_pdgId==13.) |\
+                            (bestMatchTP_pdgId==-13.)))) +\
                         1*((matchedTPsize>0.) &\
                            ((bestMatchTP_pdgId==13.) |\
                             (bestMatchTP_pdgId==-13.)))'''
+
     df.eval(expr, engine='numexpr', inplace=True)
-
-    # df[df['y_label']<0][['bestMatchTP_pdgId']]
-    # df[df['y_label']==0][['bestMatchTP_pdgId']]
-    # df[df['y_label']==1][['bestMatchTP_pdgId']]
-    # df[df['y_label']==2][['bestMatchTP_pdgId']]
-    # df[df['y_label']==3][['bestMatchTP_pdgId']]
-    # df[df['y_label']>3][['bestMatchTP_pdgId']]
-
+    
     return df
 
 def filterClass(df, isGNN = False):
 
     drop_list = [
         'mva0',
-        'mva1',
-        'mva2',
-        'mva3',
+        # 'mva1',
+        # 'mva2',
+        # 'mva3',
         'truePU',
         'dir',
         'tsos_detId',
